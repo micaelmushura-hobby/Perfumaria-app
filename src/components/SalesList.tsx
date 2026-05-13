@@ -208,7 +208,7 @@ export function SalesList({ aura }: { aura: ReturnType<typeof useAura> }) {
 
       <div className="space-y-4">
         {sales.sort((a,b) => new Date(b.criado_em).getTime() - new Date(a.criado_em).getTime()).map((sale) => {
-          const isOverdue = getSaleInstallments(sale.id).some(i => i.status === 'Pendente' && new Date(i.vencimento) < new Date());
+          const isOverdue = getSaleInstallments(sale.id).some(i => i.status !== 'Pago' && new Date(i.vencimento) < new Date());
           return (
           <div key={sale.id}>
           <Dialog onOpenChange={(open) => !open && setSelectedSale(null)}>

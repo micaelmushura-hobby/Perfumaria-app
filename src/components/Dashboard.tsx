@@ -83,7 +83,7 @@ export function Dashboard({ aura }: { aura: ReturnType<typeof useAura> }) {
           </div>
           <div className="flex justify-between items-center text-sm">
             <span className="text-slate-500">Parcelas Pendentes</span>
-            <span className="font-bold">{aura.installments.filter(i => i.status === 'Pendente').length}</span>
+            <span className="font-bold">{aura.installments.filter(i => i.status !== 'Pago').length}</span>
           </div>
         </CardContent>
       </Card>

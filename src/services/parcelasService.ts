@@ -20,7 +20,7 @@ export const parcelasService = {
     );
     return res.data.results || [];
   },
-  updateStatus: async (id: number, status: "Pendente" | "Pago") => {
+  updateStatus: async (id: number, status: "Pendente" | "Pago" | "Vencido" | "Em Aberto") => {
     const data: any = { status };
     if (status === "Pago") {
       data.pago_em = new Date().toISOString();
@@ -45,7 +45,8 @@ export const parcelasService = {
       valor_parcela: parseNumber(data.valor_parcela),
       valor: parseNumber(data.valor), // support old/common field
       valor_pago: parseNumber(data.valor_pago),
-      numero_parcela: Number(data.numero_parcela)
+      numero_parcela: Number(data.numero_parcela),
+      status: data.status || 'Pendente'
     };
 
     const res = await api.post<Installment>(

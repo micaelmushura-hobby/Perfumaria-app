@@ -29,7 +29,7 @@ export interface Sale {
   valor_venda: number;
   lucro: number;
   qtd_parcelas: number;
-  status: string;
+  status: "Pendente" | "Pago" | "Parcial" | "Em Aberto";
   criado_em: string;
 }
 
@@ -41,7 +41,7 @@ export interface Installment {
   numero_parcela: number;
   valor_parcela: number;
   vencimento: string;
-  status: "Pendente" | "Pago";
+  status: "Pendente" | "Pago" | "Vencido" | "Em Aberto";
   pago_em: string | null;
   criado_em: string;
 }

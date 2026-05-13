@@ -6,3 +6,17 @@ export const TABLE_IDS = {
 };
 
 export const BRANDS = ["O Boticário", "Natura", "Eudora", "Avon", "Hinode", "Mary Kay", "Outros"];
+
+export const SALES_STATUS = [
+  'Pendente',
+  'Pago',
+  'Parcial',
+  'Em Aberto'
+];
+
+export const INSTALLMENT_STATUS = [
+  'Pendente',
+  'Pago',
+  'Vencido',
+  'Em Aberto'
+];

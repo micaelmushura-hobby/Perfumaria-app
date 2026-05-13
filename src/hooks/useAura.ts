@@ -54,14 +54,14 @@ export function useAura() {
         .filter((i) => i.status === "Pago")
         .reduce((acc, i) => acc + parseNumber(i.valor_parcela || 0), 0),
       totalOpen: iArr
-        .filter((i) => i.status === "Pendente")
+        .filter((i) => i.status !== "Pago")
         .reduce((acc, i) => acc + parseNumber(i.valor_parcela || 0), 0),
       totalProfit: sArr.reduce((acc, s) => acc + (parseNumber(s.valor_venda || 0) - parseNumber(s.custo || 0)), 0),
       overdueInstallments: iArr.filter(
-        (i) => i.status === "Pendente" && isBefore(new Date(i.vencimento), startOfDay(new Date()))
+        (i) => i.status !== "Pago" && isBefore(new Date(i.vencimento), startOfDay(new Date()))
       ).length,
       todayCollections: iArr.filter(
-        (i) => i.status === "Pendente" && i.vencimento === today
+        (i) => i.status !== "Pago" && i.vencimento === today
       ).length,
     };
   }, [sales, installments]);

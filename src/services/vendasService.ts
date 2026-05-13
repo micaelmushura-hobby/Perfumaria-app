@@ -26,7 +26,8 @@ export const vendasService = {
       valor_venda: parseNumber(data.valor_venda),
       lucro: parseNumber(data.lucro),
       valor: parseNumber(data.valor), // support old field if still exists
-      qtd_parcelas: Number(data.qtd_parcelas)
+      qtd_parcelas: Number(data.qtd_parcelas),
+      status: data.status || 'Pendente'
     };
 
     const res = await api.post<Sale>(
