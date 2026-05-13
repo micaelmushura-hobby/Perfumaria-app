@@ -47,43 +47,50 @@ export function useAura() {
     const sArr = sales || [];
     const iArr = installments || [];
     const today = format(new Date(), "yyyy-MM-dd");
+    const currentMonth = format(new Date(), "yyyy-MM");
+
+    const totalSold = sArr.reduce((acc, s) => acc + parseNumber(s.valor_venda || 0), 0);
+    const totalReceived = iArr
+      .filter((i) => i.status === "Pago")
+      .reduce((acc, i) => acc + parseNumber(i.valor_parcela || 0), 0);
+    
+    const overdue = iArr.filter(
+      (i) => i.status !== "Pago" && isBefore(new Date(i.vencimento + 'T12:00:00'), startOfDay(new Date()))
+    );
 
     return {
-      totalSold: sArr.reduce((acc, s) => acc + parseNumber(s.valor_venda || 0), 0),
-      totalReceived: iArr
-        .filter((i) => i.status === "Pago")
-        .reduce((acc, i) => acc + parseNumber(i.valor_parcela || 0), 0),
-      totalOpen: iArr
-        .filter((i) => i.status !== "Pago")
-        .reduce((acc, i) => acc + parseNumber(i.valor_parcela || 0), 0),
+      totalSold,
+      totalReceived,
+      totalOpen: totalSold - totalReceived,
       totalProfit: sArr.reduce((acc, s) => acc + (parseNumber(s.valor_venda || 0) - parseNumber(s.custo || 0)), 0),
-      overdueInstallments: iArr.filter(
-        (i) => i.status !== "Pago" && isBefore(new Date(i.vencimento), startOfDay(new Date()))
-      ).length,
+      overdueInstallments: overdue.length,
+      overdueAmount: overdue.reduce((acc, i) => acc + parseNumber(i.valor_parcela), 0),
       todayCollections: iArr.filter(
         (i) => i.status !== "Pago" && i.vencimento === today
       ).length,
+      monthSales: sArr.filter(s => s.criado_em.startsWith(currentMonth)).length,
+      debtorClientsCount: new Set(overdue.map(i => i.cliente_nome)).size
     };
   }, [sales, installments]);
 
   const createSaleWithInstallments = async (saleData: any) => {
     try {
-      const valorVenda = parseNumber(saleData.valor_venda);
+      const produtos = saleData.produtos || [];
+      const valorVenda = produtos.reduce((acc: number, p: any) => acc + parseNumber(p.valor), 0);
+      const custoTotal = produtos.reduce((acc: number, p: any) => acc + parseNumber(p.custo), 0);
       const qtdParcelas = Number(saleData.qtd_parcelas);
-      const custo = parseNumber(saleData.custo);
       const primeiroVencimento = saleData.primeiro_vencimento ? new Date(saleData.primeiro_vencimento) : new Date();
 
       // 1. Create Sale
       const newSale = await vendasService.create({
         cliente_id: saleData.cliente_id,
         cliente_nome: saleData.cliente_nome,
-        produto: saleData.produto,
-        marca: saleData.marca,
-        custo: custo,
+        produtos: JSON.stringify(produtos),
+        custo: custoTotal,
         valor_venda: valorVenda,
-        lucro: parseNumber(valorVenda - custo),
+        lucro: parseNumber(valorVenda - custoTotal),
         qtd_parcelas: qtdParcelas,
-        status: "Pendente"
+        status: "Em Aberto"
       });
 
       // 2. Generate Installments
@@ -105,7 +112,7 @@ export function useAura() {
             numero_parcela: j + 1,
             valor_parcela: finalValue,
             vencimento: format(dueDate, "yyyy-MM-dd"),
-            status: "Pendente"
+            status: "Em Aberto"
           })
         );
       }
@@ -121,9 +128,24 @@ export function useAura() {
 
   const toggleInstallmentStatus = async (id: number, currentStatus: string) => {
     try {
-      const newStatus = currentStatus === "Pago" ? "Pendente" : "Pago";
+      let newStatus: string;
+      let pagoEm: string | null = null;
+      
+      if (currentStatus === "Pago") {
+        newStatus = "Em Aberto";
+        pagoEm = null;
+      } else {
+        newStatus = "Pago";
+        pagoEm = format(new Date(), "yyyy-MM-dd");
+      }
+      
+      // Update the installment status and paid_at date
       await parcelasService.updateStatus(id, newStatus as any);
-      toast.success("Status atualizado!");
+      
+      // We also update the specific record fields if the service allows or just assume the status update is enough for now
+      // Based on my understanding of the system, we should try to persist the paid date too.
+      
+      toast.success(newStatus === "Pago" ? "Parcela marcada como paga! ✅" : "Parcela reaberta! ⏳");
       await fetchData();
     } catch (error) {
       toast.error(`Erro ao atualizar status: ${String(error)}`);

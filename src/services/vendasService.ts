@@ -9,10 +9,18 @@ export const vendasService = {
     const user = usuariosService.getCurrentUser();
     if (!user) return [];
     
-    const res = await api.get<{ results: Sale[] }>(
+    const res = await api.get<{ results: any[] }>(
       `/database/rows/table/${TABLE_IDS.SALES}/?user_field_names=true&filter__field_user_id__equal=${user.id}`
     );
-    return res.data.results || [];
+    
+    // Normalize Baserow objects (Single Select) to strings
+    const normalized = (res.data.results || []).map(sale => ({
+      ...sale,
+      status: typeof sale.status === 'object' && sale.status !== null ? sale.status.value : sale.status,
+      marca: typeof sale.marca === 'object' && sale.marca !== null ? sale.marca.value : sale.marca,
+    }));
+
+    return normalized;
   },
   create: async (data: any) => {
     const user = usuariosService.getCurrentUser();

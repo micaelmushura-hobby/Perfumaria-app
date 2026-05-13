@@ -23,13 +23,12 @@ export interface Sale {
   user_id: number;
   cliente_id: number;
   cliente_nome: string;
-  produto: string;
-  marca: string;
-  custo: number;
+  produtos: string; // JSON string format: Array<{nome: string, marca: string, custo: number, valor: number}>
   valor_venda: number;
   lucro: number;
   qtd_parcelas: number;
-  status: "Pendente" | "Pago" | "Parcial" | "Em Aberto";
+  status: "Pendente" | "Pago" | "Parcial" | "Em Aberto" | "Atrasado";
+  metodo_pagamento?: string;
   criado_em: string;
 }
 
@@ -41,7 +40,7 @@ export interface Installment {
   numero_parcela: number;
   valor_parcela: number;
   vencimento: string;
-  status: "Pendente" | "Pago" | "Vencido" | "Em Aberto";
+  status: "Pendente" | "Pago" | "Vencido" | "Em Aberto" | "Atrasado";
   pago_em: string | null;
   criado_em: string;
 }
@@ -52,7 +51,10 @@ export interface DashboardStats {
   totalOpen: number;
   totalProfit: number;
   overdueInstallments: number;
+  overdueAmount: number;
   todayCollections: number;
+  monthSales: number;
+  debtorClientsCount: number;
 }
 
 export interface AuthContextType {

@@ -9,16 +9,30 @@ export const parcelasService = {
     const user = usuariosService.getCurrentUser();
     if (!user) return [];
     
-    const res = await api.get<{ results: Installment[] }>(
+    const res = await api.get<{ results: any[] }>(
       `/database/rows/table/${TABLE_IDS.INSTALLMENTS}/?user_field_names=true&filter__field_user_id__equal=${user.id}`
     );
-    return res.data.results || [];
+    
+    // Normalize Baserow objects (Single Select) to strings
+    const normalized = (res.data.results || []).map(inst => ({
+      ...inst,
+      status: typeof inst.status === 'object' && inst.status !== null ? inst.status.value : inst.status,
+    }));
+
+    return normalized;
   },
   getByVenda: async (vendaId: number) => {
-    const res = await api.get<{ results: Installment[] }>(
+    const res = await api.get<{ results: any[] }>(
       `/database/rows/table/${TABLE_IDS.INSTALLMENTS}/?user_field_names=true&filter__field_venda_id__equal=${vendaId}`
     );
-    return res.data.results || [];
+    
+    // Normalize Baserow objects (Single Select) to strings
+    const normalized = (res.data.results || []).map(inst => ({
+      ...inst,
+      status: typeof inst.status === 'object' && inst.status !== null ? inst.status.value : inst.status,
+    }));
+
+    return normalized;
   },
   updateStatus: async (id: number, status: "Pendente" | "Pago" | "Vencido" | "Em Aberto") => {
     const data: any = { status };

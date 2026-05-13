@@ -11,12 +11,16 @@ export const SALES_STATUS = [
   'Pendente',
   'Pago',
   'Parcial',
-  'Em Aberto'
+  'Em Aberto',
+  'Atrasado'
 ];
 
 export const INSTALLMENT_STATUS = [
   'Pendente',
   'Pago',
   'Vencido',
-  'Em Aberto'
+  'Em Aberto',
+  'Atrasado'
 ];
+
+export const PAYMENT_METHODS = ["PIX", "Dinheiro", "Cartão"];
