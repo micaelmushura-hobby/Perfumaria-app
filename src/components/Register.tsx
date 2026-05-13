@@ -26,7 +26,7 @@ export function Register({ aura }: { aura: ReturnType<typeof useAura> }) {
       toast.success("Conta criada! Agora faça seu login.");
       (window as any).toggleAuthMode?.(); // Go to login after registration
     } catch (error: any) {
-      toast.error(error.response?.data?.error || "Erro ao criar conta.");
+      toast.error(String(error || "Erro ao criar conta."));
     } finally {
       setLoading(false);
     }

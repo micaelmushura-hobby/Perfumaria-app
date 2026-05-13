@@ -81,7 +81,7 @@ export function SalesList({ aura }: { aura: ReturnType<typeof useAura> }) {
     
     if (client) {
       setTimeout(() => {
-        window.open(`https://wa.me/+55${client.telefone}?text=${encodeURIComponent(msg)}`, "_blank");
+        window.open(`https://wa.me/55${client.telefone}?text=${encodeURIComponent(msg)}`, "_blank");
       }, 500);
     }
   };

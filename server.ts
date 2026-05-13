@@ -11,14 +11,36 @@ dotenv.config();
 const app = express();
 const PORT = 3000;
 const JWT_SECRET = process.env.JWT_SECRET || "aura_secret_key";
-const BASEROW_API_URL = "https://base.appbaserow.com.br/api/database/rows/table";
-const BASEROW_TOKEN = process.env.BASEROW_TOKEN;
+const BASEROW_BASE_URL = process.env.NEXT_PUBLIC_BASEROW_URL || "https://base.appbaserow.com.br";
+const BASEROW_TOKEN = process.env.NEXT_PUBLIC_BASEROW_TOKEN;
+const BASEROW_API_URL = `${BASEROW_BASE_URL}/api/database/rows/table`;
+
+if (!BASEROW_TOKEN) {
+  console.error("FATAL: NEXT_PUBLIC_BASEROW_TOKEN is not defined in environment variables.");
+}
 
 app.use(express.json());
 
-const baserowHeaders = {
-  Authorization: `Token ${BASEROW_TOKEN}`,
-  "Content-Type": "application/json",
+// Helper to get headers safely
+const getBaserowHeaders = () => {
+  const token = process.env.NEXT_PUBLIC_BASEROW_TOKEN || process.env.BASEROW_TOKEN;
+  if (!token) {
+    console.error('[API SETUP] BASEROW_TOKEN NÃO ENCONTRADO NAS VARIÁVEIS DE AMBIENTE');
+    throw new Error("Configuração de API pendente (Token ausente). Verifique as variáveis de ambiente.");
+  }
+  return {
+    Authorization: `Token ${token}`,
+    "Content-Type": "application/json",
+  };
+};
+
+const sanitizePhone = (phone: string) => {
+  return phone.replace(/[()\s*]/g, "");
+};
+
+const getWhatsappLink = (phone: string) => {
+  const cleanPhone = sanitizePhone(phone);
+  return `https://wa.me/55${cleanPhone}`;
 };
 
 // --- AUTHENTICATION MIDDLEWARE ---
@@ -38,53 +60,59 @@ const authenticateToken = (req: any, res: any, next: any) => {
 // --- AUTH ENDPOINTS ---
 app.post("/api/register", async (req, res) => {
   const { nome, email, senha, telefone } = req.body;
+  console.log('[API] TENTATIVA DE REGISTRO:', { nome, email, telefone });
 
   try {
-    const tableId = process.env.TABLE_USUARIOS_ID || "954";
+    const tableId = process.env.NEXT_PUBLIC_TABLE_USUARIOS || "954";
+    const headers = getBaserowHeaders();
+    const checkUrl = `${BASEROW_API_URL}/${tableId}/?user_field_names=true&filter__field_email__equal=${email}`;
     
-    // Check if user already exists
-    const checkUser = await axios.get(`${BASEROW_API_URL}/${tableId}/?user_field_names=true&filter__field_email__equal=${email}`, {
-      headers: baserowHeaders,
-    });
+    console.log(`[BASEROW] GET ${checkUrl}`);
+    const checkUser = await axios.get(checkUrl, { headers });
 
     if (checkUser.data.results && checkUser.data.results.length > 0) {
+      console.warn('[API] EMAIL JÁ EXISTE:', email);
       return res.status(400).json({ error: "E-mail já cadastrado" });
     }
 
     const hashedSenha = await bcrypt.hash(senha, 10);
-    const sanitizedPhone = sanitizePhone(telefone);
+    const cleanPhone = sanitizePhone(telefone);
     
     const newUser = {
       nome,
       email,
       senha: hashedSenha,
-      telefone: sanitizedPhone,
-      whatsapp_link: `https://wa.me/+55${sanitizedPhone}`,
-      criado_em: new Date().toISOString()
+      telefone: cleanPhone
+      // Removido whatsapp_link pois é um campo de formula (read-only) no Baserow
     };
 
-    const response = await axios.post(`${BASEROW_API_URL}/${tableId}/?user_field_names=true`, newUser, {
-      headers: baserowHeaders,
-    });
+    const postUrl = `${BASEROW_API_URL}/${tableId}/?user_field_names=true`;
+    console.log(`[BASEROW] POST ${postUrl} - DATA:`, JSON.stringify(newUser));
 
+    const response = await axios.post(postUrl, newUser, { headers });
+
+    console.log('[API] SUCESSO NO REGISTRO');
     res.status(201).json({ message: "Usuário criado com sucesso" });
   } catch (error: any) {
-    console.error("Register Error:", error.response?.data || error.message);
-    res.status(500).json({ error: "Erro ao criar conta" });
+    const errorDetail = error.response?.data || error.message;
+    console.error('[API] ERRO NO REGISTRO:', JSON.stringify(errorDetail));
+    res.status(500).json({ error: "Erro ao criar conta no Baserow", details: errorDetail });
   }
 });
 
 app.post("/api/login", async (req, res) => {
   const { email, senha } = req.body;
+  console.log('[API] TENTATIVA DE LOGIN:', email);
 
   try {
-    const tableId = process.env.TABLE_USUARIOS_ID || "954";
-    const response = await axios.get(`${BASEROW_API_URL}/${tableId}/?user_field_names=true&filter__field_email__equal=${email}`, {
-      headers: baserowHeaders,
-    });
+    const tableId = process.env.NEXT_PUBLIC_TABLE_USUARIOS || "954";
+    const loginUrl = `${BASEROW_API_URL}/${tableId}/?user_field_names=true&filter__field_email__equal=${email}`;
+    
+    const response = await axios.get(loginUrl, { headers: getBaserowHeaders() });
 
     const users = response.data.results;
     if (!users || users.length === 0) {
+      console.warn('[API] USUÁRIO NÃO ENCONTRADO:', email);
       return res.status(401).json({ error: "Usuário não encontrado" });
     }
 
@@ -92,24 +120,20 @@ app.post("/api/login", async (req, res) => {
     const passwordMatch = await bcrypt.compare(senha, user.senha);
 
     if (!passwordMatch) {
+      console.warn('[API] SENHA INCORRETA PARA:', email);
       return res.status(401).json({ error: "Senha incorreta" });
     }
 
-    // Don't send password back
     const { senha: _, ...userWithoutPassword } = user;
     const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: "7d" });
 
     res.json({ user: userWithoutPassword, token });
   } catch (error: any) {
-    console.error("Login Error:", error.response?.data || error.message);
-    res.status(500).json({ error: "Erro no servidor" });
+    const errorDetail = error.response?.data || error.message;
+    console.error('[API] ERRO NO LOGIN:', errorDetail);
+    res.status(500).json({ error: "Erro no servidor durante login", details: errorDetail });
   }
 });
-
-// Helper to sanitize phone
-const sanitizePhone = (phone: string) => {
-  return phone.replace(/[()\s*]/g, "");
-};
 
 // --- PROXY ENDPOINTS (PROTECTED) ---
 app.get("/api/baserow/:tableId", authenticateToken, async (req: any, res) => {
@@ -120,7 +144,7 @@ app.get("/api/baserow/:tableId", authenticateToken, async (req: any, res) => {
     // Append user_id filter automatically
     const url = `${BASEROW_API_URL}/${tableId}/?user_field_names=true&filter__field_user_id__equal=${userId}`;
     
-    const response = await axios.get(url, { headers: baserowHeaders });
+    const response = await axios.get(url, { headers: getBaserowHeaders() });
     res.json(response.data);
   } catch (error: any) {
     console.error("GET Error:", error.response?.data || error.message);
@@ -133,20 +157,31 @@ app.post("/api/baserow/:tableId", authenticateToken, async (req: any, res) => {
     const { tableId } = req.params;
     const userId = req.user.id;
     
-    const data = { ...req.body, user_id: userId };
+    // Copy body and inject user_id as an array (Baserow Link field requirement)
+    const data = { ...req.body };
+    data.user_id = [userId];
+
+    // Check for other common links and wrap them in arrays if they are single values
+    if (data.cliente_id && !Array.isArray(data.cliente_id)) {
+      data.cliente_id = [data.cliente_id];
+    }
+    if (data.venda_id && !Array.isArray(data.venda_id)) {
+      data.venda_id = [data.venda_id];
+    }
     
     // Sanitize phone if provided
     if (data.telefone) {
-      data.telefone = sanitizePhone(data.telefone);
-      data.whatsapp_link = `https://wa.me/+55${data.telefone}`;
+      const cleanPhone = sanitizePhone(data.telefone);
+      data.telefone = cleanPhone;
+      // Removido whatsapp_link manual pois costuma ser formula no Baserow
     }
 
     const response = await axios.post(`${BASEROW_API_URL}/${tableId}/?user_field_names=true`, data, {
-      headers: baserowHeaders,
+      headers: getBaserowHeaders(),
     });
     res.json(response.data);
   } catch (error: any) {
-    console.error("POST Error:", error.response?.data || error.message);
+    console.error("POST Error:", JSON.stringify(error.response?.data || error.message));
     res.status(error.response?.status || 500).json(error.response?.data || { error: "Internal Server Error" });
   }
 });
@@ -156,18 +191,30 @@ app.patch("/api/baserow/:tableId/:rowId", authenticateToken, async (req: any, re
     const { tableId, rowId } = req.params;
     const data = { ...req.body };
 
+    // Wrap Link fields in arrays if they are present and not already arrays
+    if (data.user_id && !Array.isArray(data.user_id)) {
+      data.user_id = [data.user_id];
+    }
+    if (data.cliente_id && !Array.isArray(data.cliente_id)) {
+      data.cliente_id = [data.cliente_id];
+    }
+    if (data.venda_id && !Array.isArray(data.venda_id)) {
+      data.venda_id = [data.venda_id];
+    }
+
     // Sanitize phone if provided
     if (data.telefone) {
-      data.telefone = sanitizePhone(data.telefone);
-      data.whatsapp_link = `https://wa.me/+55${data.telefone}`;
+      const cleanPhone = sanitizePhone(data.telefone);
+      data.telefone = cleanPhone;
+      // Removido whatsapp_link manual pois costuma ser formula no Baserow
     }
 
     const response = await axios.patch(`${BASEROW_API_URL}/${tableId}/${rowId}/?user_field_names=true`, data, {
-      headers: baserowHeaders,
+      headers: getBaserowHeaders(),
     });
     res.json(response.data);
   } catch (error: any) {
-    console.error("PATCH Error:", error.response?.data || error.message);
+    console.error("PATCH Error:", JSON.stringify(error.response?.data || error.message));
     res.status(error.response?.status || 500).json(error.response?.data || { error: "Internal Server Error" });
   }
 });
@@ -176,7 +223,7 @@ app.delete("/api/baserow/:tableId/:rowId", authenticateToken, async (req, res) =
   try {
     const { tableId, rowId } = req.params;
     await axios.delete(`${BASEROW_API_URL}/${tableId}/${rowId}/`, {
-      headers: baserowHeaders,
+      headers: getBaserowHeaders(),
     });
     res.status(204).send();
   } catch (error: any) {

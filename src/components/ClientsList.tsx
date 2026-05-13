@@ -34,7 +34,7 @@ export function ClientsList({ aura }: { aura: ReturnType<typeof useAura> }) {
       setIsDialogOpen(false);
       fetchData();
     } catch (error) {
-      toast.error("Erro ao cadastrar cliente.");
+      toast.error(`Erro ao cadastrar cliente: ${String(error)}`);
     }
   };
 
@@ -49,7 +49,7 @@ export function ClientsList({ aura }: { aura: ReturnType<typeof useAura> }) {
   };
 
   const openWhatsApp = (phone: string) => {
-    window.open(`https://wa.me/+55${phone}`, "_blank");
+    window.open(`https://wa.me/55${phone}`, "_blank");
   };
 
   return (

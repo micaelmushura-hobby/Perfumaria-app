@@ -28,7 +28,7 @@ export function useAura() {
       setInstallments(i);
     } catch (error) {
       console.error(error);
-      toast.error("Erro ao carregar dados.");
+      toast.error(`Erro ao carregar dados: ${String(error)}`);
     } finally {
       setLoading(false);
     }
@@ -73,8 +73,7 @@ export function useAura() {
         valor_venda: Number(saleData.valor_venda),
         lucro: Number(saleData.valor_venda) - Number(saleData.custo),
         qtd_parcelas: Number(saleData.qtd_parcelas),
-        status: "Pending",
-        criado_em: new Date().toISOString(),
+        status: "Pending"
       });
 
       // 2. Generate Installments
@@ -90,8 +89,7 @@ export function useAura() {
             numero_parcela: j + 1,
             valor_parcela: Number(installmentValue.toFixed(2)),
             vencimento: format(dueDate, "yyyy-MM-dd"),
-            status: "Pending",
-            criado_em: new Date().toISOString(),
+            status: "Pending"
           })
         );
       }
@@ -101,7 +99,7 @@ export function useAura() {
       fetchData();
     } catch (error) {
       console.error(error);
-      toast.error("Erro ao criar venda.");
+      toast.error(`Erro ao criar venda: ${String(error)}`);
     }
   };
 
@@ -112,7 +110,7 @@ export function useAura() {
       toast.success("Status atualizado!");
       fetchData();
     } catch (error) {
-      toast.error("Erro ao atualizar status.");
+      toast.error(`Erro ao atualizar status: ${String(error)}`);
     }
   };
 
