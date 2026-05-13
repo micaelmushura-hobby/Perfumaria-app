@@ -17,14 +17,12 @@ export const clientesService = {
     const user = usuariosService.getCurrentUser();
     if (!user) throw new Error("Usuário não autenticado");
 
-    // Phone sanitization and link generation
+    // Phone sanitization
     const cleanPhone = data.telefone.replace(/[()\s*-]/g, "");
-    const whatsapp_link = `https://wa.me/55${cleanPhone}`;
 
     const payload = {
       ...data,
       telefone: cleanPhone,
-      whatsapp_link,
       user_id: [user.id] // Link fields must be arrays
     };
 
@@ -34,10 +32,14 @@ export const clientesService = {
   update: async (id: number, data: Partial<Client>) => {
     const payload: any = { ...data };
     
+    // Remove read-only or system fields if they were passed in
+    delete payload.id;
+    delete payload.criado_em;
+    delete payload.whatsapp_link;
+    
     if (payload.telefone) {
       const cleanPhone = payload.telefone.replace(/[()\s*-]/g, "");
       payload.telefone = cleanPhone;
-      payload.whatsapp_link = `https://wa.me/55${cleanPhone}`;
     }
 
     if (payload.user_id && !Array.isArray(payload.user_id)) {

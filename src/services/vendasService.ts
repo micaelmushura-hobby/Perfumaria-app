@@ -32,6 +32,10 @@ export const vendasService = {
   update: async (id: number, data: any) => {
     const payload = { ...data };
     
+    // Remove read-only or system fields
+    delete payload.id;
+    delete payload.criado_em;
+    
     if (payload.user_id && !Array.isArray(payload.user_id)) {
       payload.user_id = [payload.user_id];
     }

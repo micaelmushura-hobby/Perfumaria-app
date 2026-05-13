@@ -8,7 +8,6 @@ export const usuariosService = {
   register: async (data: { nome: string; email: string; senha: string; telefone: string }) => {
     // Sanitization
     const cleanPhone = data.telefone.replace(/[()\s*-]/g, "");
-    const whatsapp_link = `https://wa.me/55${cleanPhone}`;
     
     // Hash password
     const hashedSenha = await bcrypt.hash(data.senha, 10);
@@ -17,8 +16,7 @@ export const usuariosService = {
       nome: data.nome,
       email: data.email,
       senha: hashedSenha,
-      telefone: cleanPhone,
-      whatsapp_link
+      telefone: cleanPhone
     };
 
     const res = await api.post(`/database/rows/table/${TABLE_USER}/?user_field_names=true`, payload);
