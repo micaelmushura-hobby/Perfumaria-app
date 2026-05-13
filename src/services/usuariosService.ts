@@ -2,6 +2,10 @@ import { api } from "./api";
 import { Usuario } from "@/src/types";
 
 export const usuariosService = {
+  register: async (data: { nome: string; email: string; senha: string; telefone: string }) => {
+    const res = await api.post("/register", data);
+    return res.data;
+  },
   login: async (email: string, senha: string) => {
     const res = await api.post<{ user: Usuario; token: string }>("/login", { email, senha });
     localStorage.setItem("aura_token", res.data.token);

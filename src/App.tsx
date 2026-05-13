@@ -1,22 +1,31 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useAura } from "@/src/hooks/useAura";
 import { Navbar } from "@/src/components/Navbar";
 import { Dashboard } from "@/src/components/Dashboard";
 import { ClientsList } from "@/src/components/ClientsList";
 import { SalesList } from "@/src/components/SalesList";
 import { Login } from "@/src/components/Login";
+import { Register } from "@/src/components/Register";
 import { Toaster } from "@/components/ui/sonner";
 import { LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<"dashboard" | "clients" | "sales">("dashboard");
+  const [authMode, setAuthMode] = useState<"login" | "register">("login");
   const aura = useAura();
+
+  // Expose toggleAuthMode to window for easy access from children
+  useEffect(() => {
+    (window as any).toggleAuthMode = () => {
+      setAuthMode(prev => prev === "login" ? "register" : "login");
+    };
+  }, []);
 
   if (!aura.user) {
     return (
       <>
-        <Login aura={aura} />
+        {authMode === "login" ? <Login aura={aura} /> : <Register aura={aura} />}
         <Toaster position="top-center" theme="dark" />
       </>
     );

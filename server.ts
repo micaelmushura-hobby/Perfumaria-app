@@ -36,6 +36,44 @@ const authenticateToken = (req: any, res: any, next: any) => {
 };
 
 // --- AUTH ENDPOINTS ---
+app.post("/api/register", async (req, res) => {
+  const { nome, email, senha, telefone } = req.body;
+
+  try {
+    const tableId = process.env.TABLE_USUARIOS_ID || "954";
+    
+    // Check if user already exists
+    const checkUser = await axios.get(`${BASEROW_API_URL}/${tableId}/?user_field_names=true&filter__field_email__equal=${email}`, {
+      headers: baserowHeaders,
+    });
+
+    if (checkUser.data.results && checkUser.data.results.length > 0) {
+      return res.status(400).json({ error: "E-mail já cadastrado" });
+    }
+
+    const hashedSenha = await bcrypt.hash(senha, 10);
+    const sanitizedPhone = sanitizePhone(telefone);
+    
+    const newUser = {
+      nome,
+      email,
+      senha: hashedSenha,
+      telefone: sanitizedPhone,
+      whatsapp_link: `https://wa.me/+55${sanitizedPhone}`,
+      criado_em: new Date().toISOString()
+    };
+
+    const response = await axios.post(`${BASEROW_API_URL}/${tableId}/?user_field_names=true`, newUser, {
+      headers: baserowHeaders,
+    });
+
+    res.status(201).json({ message: "Usuário criado com sucesso" });
+  } catch (error: any) {
+    console.error("Register Error:", error.response?.data || error.message);
+    res.status(500).json({ error: "Erro ao criar conta" });
+  }
+});
+
 app.post("/api/login", async (req, res) => {
   const { email, senha } = req.body;
 

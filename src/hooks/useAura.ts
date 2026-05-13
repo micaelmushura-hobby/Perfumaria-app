@@ -126,6 +126,10 @@ export function useAura() {
     setUser(null);
   };
 
+  const register = async (data: any) => {
+    await usuariosService.register(data);
+  };
+
   return {
     user,
     clients,
@@ -138,5 +142,6 @@ export function useAura() {
     toggleInstallmentStatus,
     login,
     logout,
+    register,
   };
 }
