@@ -1,0 +1,8 @@
+{
+  "name": "Aura Perfumaria",
+  "description": "Sistema mobile-first para gestão de vendas e parcelamentos de perfumaria brasileira (Boticário, Natura, Eudora).",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
