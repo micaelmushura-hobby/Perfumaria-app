@@ -11,3 +11,11 @@ export const formatCurrency = (val: number) => {
     currency: "BRL",
   }).format(val);
 };
+
+export const parseNumber = (val: any): number => {
+  if (val === undefined || val === null || val === "") return 0;
+  if (typeof val === "number") return val;
+  const normalized = String(val).replace(",", ".");
+  const parsed = parseFloat(normalized);
+  return isNaN(parsed) ? 0 : parsed;
+};

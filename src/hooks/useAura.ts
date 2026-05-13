@@ -6,6 +6,7 @@ import { usuariosService } from "@/src/services/usuariosService";
 import { Client, Sale, Installment, DashboardStats, Usuario } from "@/src/types";
 import { toast } from "sonner";
 import { addMonths, format, isAfter, isBefore, startOfDay } from "date-fns";
+import { parseNumber } from "@/lib/utils";
 
 export function useAura() {
   const [user, setUser] = useState<Usuario | null>(usuariosService.getCurrentUser());
@@ -47,14 +48,14 @@ export function useAura() {
     const iArr = installments || [];
 
     return {
-      totalSold: sArr.reduce((acc, s) => acc + Number(s.valor_venda || 0), 0),
+      totalSold: sArr.reduce((acc, s) => acc + parseNumber(s.valor_venda || 0), 0),
       totalReceived: iArr
         .filter((i) => i.status === "Paid")
-        .reduce((acc, i) => acc + Number(i.valor_parcela || 0), 0),
+        .reduce((acc, i) => acc + parseNumber(i.valor_parcela || 0), 0),
       totalOpen: iArr
         .filter((i) => i.status === "Pending")
-        .reduce((acc, i) => acc + Number(i.valor_parcela || 0), 0),
-      totalProfit: sArr.reduce((acc, s) => acc + (Number(s.valor_venda || 0) - Number(s.custo || 0)), 0),
+        .reduce((acc, i) => acc + parseNumber(i.valor_parcela || 0), 0),
+      totalProfit: sArr.reduce((acc, s) => acc + (parseNumber(s.valor_venda || 0) - parseNumber(s.custo || 0)), 0),
       overdueInstallments: iArr.filter(
         (i) => i.status === "Pending" && isBefore(new Date(i.vencimento), startOfDay(new Date()))
       ).length,
@@ -69,15 +70,15 @@ export function useAura() {
         cliente_nome: saleData.cliente_nome,
         produto: saleData.produto,
         marca: saleData.marca,
-        custo: Number(saleData.custo),
-        valor_venda: Number(saleData.valor_venda),
-        lucro: Number(saleData.valor_venda) - Number(saleData.custo),
+        custo: parseNumber(saleData.custo),
+        valor_venda: parseNumber(saleData.valor_venda),
+        lucro: parseNumber(saleData.valor_venda) - parseNumber(saleData.custo),
         qtd_parcelas: Number(saleData.qtd_parcelas),
         status: "Pending"
       });
 
       // 2. Generate Installments
-      const installmentValue = Number(saleData.valor_venda) / Number(saleData.qtd_parcelas);
+      const installmentValue = parseNumber(saleData.valor_venda) / Number(saleData.qtd_parcelas);
       const installmentPromises = [];
 
       for (let j = 0; j < Number(saleData.qtd_parcelas); j++) {

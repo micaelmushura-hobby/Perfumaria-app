@@ -2,6 +2,7 @@ import { api } from "./api";
 import { Sale } from "@/src/types";
 import { TABLE_IDS } from "@/src/constants";
 import { usuariosService } from "./usuariosService";
+import { parseNumber } from "@/lib/utils";
 
 export const vendasService = {
   getAll: async () => {
@@ -21,7 +22,10 @@ export const vendasService = {
       ...data,
       user_id: Number(user.id),
       cliente_id: Number(Array.isArray(data.cliente_id) ? data.cliente_id[0] : data.cliente_id),
-      valor: Number(data.valor),
+      custo: parseNumber(data.custo),
+      valor_venda: parseNumber(data.valor_venda),
+      lucro: parseNumber(data.lucro),
+      valor: parseNumber(data.valor), // support old field if still exists
       qtd_parcelas: Number(data.qtd_parcelas)
     };
 
@@ -44,7 +48,11 @@ export const vendasService = {
     if (payload.cliente_id) {
       payload.cliente_id = Number(Array.isArray(payload.cliente_id) ? payload.cliente_id[0] : payload.cliente_id);
     }
-    if (payload.valor !== undefined) payload.valor = Number(payload.valor);
+    
+    if (payload.custo !== undefined) payload.custo = parseNumber(payload.custo);
+    if (payload.valor_venda !== undefined) payload.valor_venda = parseNumber(payload.valor_venda);
+    if (payload.lucro !== undefined) payload.lucro = parseNumber(payload.lucro);
+    if (payload.valor !== undefined) payload.valor = parseNumber(payload.valor);
     if (payload.qtd_parcelas !== undefined) payload.qtd_parcelas = Number(payload.qtd_parcelas);
 
     const res = await api.patch<Sale>(

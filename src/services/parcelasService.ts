@@ -2,6 +2,7 @@ import { api } from "./api";
 import { Installment } from "@/src/types";
 import { TABLE_IDS } from "@/src/constants";
 import { usuariosService } from "./usuariosService";
+import { parseNumber } from "@/lib/utils";
 
 export const parcelasService = {
   getAll: async () => {
@@ -41,8 +42,9 @@ export const parcelasService = {
       ...data,
       user_id: Number(user.id),
       venda_id: Number(Array.isArray(data.venda_id) ? data.venda_id[0] : data.venda_id),
-      valor: Number(data.valor),
-      valor_pago: data.valor_pago ? Number(data.valor_pago) : 0,
+      valor_parcela: parseNumber(data.valor_parcela),
+      valor: parseNumber(data.valor), // support old/common field
+      valor_pago: parseNumber(data.valor_pago),
       numero_parcela: Number(data.numero_parcela)
     };
 
