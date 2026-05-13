@@ -23,7 +23,7 @@ export const clientesService = {
     const payload = {
       ...data,
       telefone: cleanPhone,
-      user_id: [user.id] // Link fields must be arrays
+      user_id: Number(user.id)
     };
 
     const res = await api.post<Client>(`/database/rows/table/${TABLE_IDS.CLIENTS}/?user_field_names=true`, payload);
@@ -42,8 +42,8 @@ export const clientesService = {
       payload.telefone = cleanPhone;
     }
 
-    if (payload.user_id && !Array.isArray(payload.user_id)) {
-      payload.user_id = [payload.user_id];
+    if (payload.user_id) {
+      payload.user_id = Number(Array.isArray(payload.user_id) ? payload.user_id[0] : payload.user_id);
     }
 
     const res = await api.patch<Client>(`/database/rows/table/${TABLE_IDS.CLIENTS}/${id}/?user_field_names=true`, payload);

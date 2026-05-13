@@ -39,8 +39,11 @@ export const parcelasService = {
 
     const payload = {
       ...data,
-      user_id: [user.id],
-      venda_id: Array.isArray(data.venda_id) ? data.venda_id : [data.venda_id]
+      user_id: Number(user.id),
+      venda_id: Number(Array.isArray(data.venda_id) ? data.venda_id[0] : data.venda_id),
+      valor: Number(data.valor),
+      valor_pago: data.valor_pago ? Number(data.valor_pago) : 0,
+      numero_parcela: Number(data.numero_parcela)
     };
 
     const res = await api.post<Installment>(

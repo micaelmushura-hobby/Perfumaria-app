@@ -19,8 +19,10 @@ export const vendasService = {
 
     const payload = {
       ...data,
-      user_id: [user.id],
-      cliente_id: Array.isArray(data.cliente_id) ? data.cliente_id : [data.cliente_id]
+      user_id: Number(user.id),
+      cliente_id: Number(Array.isArray(data.cliente_id) ? data.cliente_id[0] : data.cliente_id),
+      valor: Number(data.valor),
+      qtd_parcelas: Number(data.qtd_parcelas)
     };
 
     const res = await api.post<Sale>(
@@ -36,12 +38,14 @@ export const vendasService = {
     delete payload.id;
     delete payload.criado_em;
     
-    if (payload.user_id && !Array.isArray(payload.user_id)) {
-      payload.user_id = [payload.user_id];
+    if (payload.user_id) {
+      payload.user_id = Number(Array.isArray(payload.user_id) ? payload.user_id[0] : payload.user_id);
     }
-    if (payload.cliente_id && !Array.isArray(payload.cliente_id)) {
-      payload.cliente_id = [payload.cliente_id];
+    if (payload.cliente_id) {
+      payload.cliente_id = Number(Array.isArray(payload.cliente_id) ? payload.cliente_id[0] : payload.cliente_id);
     }
+    if (payload.valor !== undefined) payload.valor = Number(payload.valor);
+    if (payload.qtd_parcelas !== undefined) payload.qtd_parcelas = Number(payload.qtd_parcelas);
 
     const res = await api.patch<Sale>(
       `/database/rows/table/${TABLE_IDS.SALES}/${id}/?user_field_names=true`,
