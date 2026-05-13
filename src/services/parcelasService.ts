@@ -34,10 +34,10 @@ export const parcelasService = {
 
     return normalized;
   },
-  updateStatus: async (id: number, status: "Pendente" | "Pago" | "Vencido" | "Em Aberto") => {
+  updateStatus: async (id: number, status: "Pendente" | "Pago" | "Vencido" | "Em Aberto", pago_em?: string | null) => {
     const data: any = { status };
     if (status === "Pago") {
-      data.pago_em = new Date().toISOString();
+      data.pago_em = pago_em || new Date().toISOString();
     } else {
       data.pago_em = null;
     }

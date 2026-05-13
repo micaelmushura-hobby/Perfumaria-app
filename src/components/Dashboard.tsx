@@ -100,9 +100,27 @@ export function Dashboard({ aura }: { aura: ReturnType<typeof useAura> }) {
           <CardTitle className="text-sm font-bold uppercase tracking-widest text-zinc-500">Resumo Operacional</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 pt-6">
-          <div className="flex justify-between items-center text-sm">
-            <span className="text-zinc-500">Vendas do Mês</span>
-            <span className="font-bold">{(stats.monthSales || 0)}</span>
+          <div className="flex justify-between items-center text-sm border-b border-zinc-800/30 pb-2">
+            <span className="text-zinc-500">Em Aberto</span>
+            <span className="font-bold text-zinc-100">{stats.openInstallmentsCount}</span>
+          </div>
+          <div className="flex justify-between items-center text-sm border-b border-zinc-800/30 pb-2">
+            <span className="text-zinc-500">Pagas</span>
+            <span className="font-bold text-emerald-400">{stats.paidInstallmentsCount}</span>
+          </div>
+          <div className="flex justify-between items-center text-sm border-b border-zinc-800/30 pb-2">
+            <span className="text-zinc-500">Vencidas</span>
+            <span className="font-bold text-rose-400">{stats.overdueInstallments}</span>
+          </div>
+          <div className="flex justify-between items-center text-sm border-b border-zinc-800/30 pb-2">
+            <span className="text-zinc-400 font-medium">Total Pendente</span>
+            <span className="font-bold text-zinc-100">{stats.openInstallmentsCount + stats.overdueInstallments}</span>
+          </div>
+          <div className="pt-2">
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-zinc-500">Vendas do Mês</span>
+              <span className="font-bold">{(stats.monthSales || 0)}</span>
+            </div>
           </div>
           <div className="flex justify-between items-center text-sm">
             <span className="text-zinc-500">Clientes Ativos</span>

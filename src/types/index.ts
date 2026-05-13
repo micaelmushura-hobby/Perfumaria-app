@@ -24,6 +24,8 @@ export interface Sale {
   cliente_id: number;
   cliente_nome: string;
   produtos: string; // JSON string format: Array<{nome: string, marca: string, custo: number, valor: number}>
+  produto?: string; // Summary field
+  marca?: string; // Summary field
   valor_venda: number;
   lucro: number;
   qtd_parcelas: number;
@@ -52,6 +54,8 @@ export interface DashboardStats {
   totalProfit: number;
   overdueInstallments: number;
   overdueAmount: number;
+  paidInstallmentsCount: number;
+  openInstallmentsCount: number;
   todayCollections: number;
   monthSales: number;
   debtorClientsCount: number;

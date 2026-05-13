@@ -58,6 +58,9 @@ export function useAura() {
       (i) => i.status !== "Pago" && isBefore(new Date(i.vencimento + 'T12:00:00'), startOfDay(new Date()))
     );
 
+    const paidTotalCount = iArr.filter(i => i.status === "Pago").length;
+    const openTotalCount = iArr.filter(i => i.status !== "Pago" && !isBefore(new Date(i.vencimento + 'T12:00:00'), startOfDay(new Date()))).length;
+
     return {
       totalSold,
       totalReceived,
@@ -65,6 +68,8 @@ export function useAura() {
       totalProfit: sArr.reduce((acc, s) => acc + (parseNumber(s.valor_venda || 0) - parseNumber(s.custo || 0)), 0),
       overdueInstallments: overdue.length,
       overdueAmount: overdue.reduce((acc, i) => acc + parseNumber(i.valor_parcela), 0),
+      paidInstallmentsCount: paidTotalCount,
+      openInstallmentsCount: openTotalCount,
       todayCollections: iArr.filter(
         (i) => i.status !== "Pago" && i.vencimento === today
       ).length,
@@ -86,10 +91,13 @@ export function useAura() {
         cliente_id: saleData.cliente_id,
         cliente_nome: saleData.cliente_nome,
         produtos: JSON.stringify(produtos),
+        produto: produtos.length === 1 ? produtos[0].nome : `${produtos.length} Produtos`,
+        marca: produtos.length === 1 ? produtos[0].marca : 'Mix',
         custo: custoTotal,
         valor_venda: valorVenda,
         lucro: parseNumber(valorVenda - custoTotal),
         qtd_parcelas: qtdParcelas,
+        metodo_pagamento: saleData.metodo_pagamento,
         status: "Em Aberto"
       });
 
@@ -140,15 +148,30 @@ export function useAura() {
       }
       
       // Update the installment status and paid_at date
-      await parcelasService.updateStatus(id, newStatus as any);
-      
-      // We also update the specific record fields if the service allows or just assume the status update is enough for now
-      // Based on my understanding of the system, we should try to persist the paid date too.
+      await parcelasService.updateStatus(id, newStatus as any, pagoEm);
       
       toast.success(newStatus === "Pago" ? "Parcela marcada como paga! ✅" : "Parcela reaberta! ⏳");
       await fetchData();
     } catch (error) {
       toast.error(`Erro ao atualizar status: ${String(error)}`);
+    }
+  };
+
+  const updateSale = async (id: number, data: any) => {
+    try {
+      if (data.produtos) {
+        const produtos = Array.isArray(data.produtos) ? data.produtos : JSON.parse(data.produtos);
+        data.custo = produtos.reduce((acc: number, p: any) => acc + parseNumber(p.custo), 0);
+        data.valor_venda = produtos.reduce((acc: number, p: any) => acc + parseNumber(p.valor), 0);
+        data.lucro = parseNumber(data.valor_venda - data.custo);
+        data.produto = produtos.length === 1 ? produtos[0].nome : `${produtos.length} Produtos`;
+        data.marca = produtos.length === 1 ? produtos[0].marca : 'Mix';
+      }
+      await vendasService.update(id, data);
+      toast.success("Venda atualizada!");
+      await fetchData();
+    } catch (error) {
+      toast.error(`Erro ao atualizar venda: ${String(error)}`);
     }
   };
 
@@ -175,6 +198,7 @@ export function useAura() {
     stats,
     fetchData,
     createSaleWithInstallments,
+    updateSale,
     toggleInstallmentStatus,
     login,
     logout,

@@ -33,7 +33,8 @@ export const vendasService = {
       custo: parseNumber(data.custo),
       valor_venda: parseNumber(data.valor_venda),
       lucro: parseNumber(data.lucro),
-      valor: parseNumber(data.valor), // support old field if still exists
+      produto: data.produto || "",
+      marca: data.marca || "",
       qtd_parcelas: Number(data.qtd_parcelas),
       status: data.status || 'Pendente'
     };
@@ -61,8 +62,8 @@ export const vendasService = {
     if (payload.custo !== undefined) payload.custo = parseNumber(payload.custo);
     if (payload.valor_venda !== undefined) payload.valor_venda = parseNumber(payload.valor_venda);
     if (payload.lucro !== undefined) payload.lucro = parseNumber(payload.lucro);
-    if (payload.valor !== undefined) payload.valor = parseNumber(payload.valor);
     if (payload.qtd_parcelas !== undefined) payload.qtd_parcelas = Number(payload.qtd_parcelas);
+    if (payload.produtos && typeof payload.produtos !== 'string') payload.produtos = JSON.stringify(payload.produtos);
 
     const res = await api.patch<Sale>(
       `/database/rows/table/${TABLE_IDS.SALES}/${id}/?user_field_names=true`,

@@ -50,6 +50,8 @@ export function ClientsList({ aura }: { aura: ReturnType<typeof useAura> }) {
     const totalPendente = clientInstallments.filter(i => i.status !== "Pago").reduce((acc, i) => acc + parseNumber(i.valor_parcela), 0);
     const lucroGerado = clientSales.reduce((acc, s) => acc + (parseNumber(s.valor_venda) - parseNumber(s.custo)), 0);
     const parcelasVencidas = clientInstallments.filter(i => i.status !== "Pago" && isBefore(new Date(i.vencimento + 'T12:00:00'), startOfDay(new Date())));
+    const parcelasPagas = clientInstallments.filter(i => i.status === "Pago");
+    const parcelasAbertas = clientInstallments.filter(i => i.status !== "Pago" && !isBefore(new Date(i.vencimento + 'T12:00:00'), startOfDay(new Date())));
 
     return {
       totalComprado,
@@ -58,6 +60,8 @@ export function ClientsList({ aura }: { aura: ReturnType<typeof useAura> }) {
       lucroGerado,
       qtdVendas: clientSales.length,
       parcelasVencidasCount: parcelasVencidas.length,
+      parcelasPagasCount: parcelasPagas.length,
+      parcelasAbertasCount: parcelasAbertas.length,
       vendas: clientSales,
       parcelas: clientInstallments
     };
@@ -82,7 +86,7 @@ export function ClientsList({ aura }: { aura: ReturnType<typeof useAura> }) {
     });
 
     const totalVenda = stats.totalComprado;
-    msg += `\nTotal 🟰 ${totalVenda.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}\n\n`;
+    msg += `Total 🟰 ${totalVenda.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}\n\n`;
 
     stats.parcelas.sort((a: any, b: any) => new Date(a.vencimento).getTime() - new Date(b.vencimento).getTime()).forEach((inst: any, idx: number) => {
       const date = format(new Date(inst.vencimento + 'T12:00:00'), "dd/MM/yy");
@@ -101,7 +105,7 @@ export function ClientsList({ aura }: { aura: ReturnType<typeof useAura> }) {
     
     if (client.telefone) {
       const d = client.telefone.replace(/\D/g, "");
-      window.open(`https://wa.me/55${d}?text=${encodeURIComponent("Olá, " + client.nome + "! Segue o resumo financeiro atualizado:\n\n" + msg)}`, "_blank");
+      window.open(`https://wa.me/55${d}?text=${encodeURIComponent(msg)}`, "_blank");
     }
   };
 
@@ -267,6 +271,25 @@ export function ClientsList({ aura }: { aura: ReturnType<typeof useAura> }) {
                           </div>
                         </div>
 
+                        <div className="grid grid-cols-4 gap-2">
+                          <div className="p-2 bg-zinc-950 border border-zinc-800 rounded-2xl flex flex-col items-center justify-center">
+                             <span className="text-zinc-500 text-[8px] font-bold uppercase">Compras</span>
+                             <span className="text-sm font-light text-zinc-100">{stats.qtdVendas}</span>
+                          </div>
+                          <div className="p-2 bg-zinc-950 border border-zinc-800 rounded-2xl flex flex-col items-center justify-center">
+                             <span className="text-zinc-500 text-[8px] font-bold uppercase">Pagas</span>
+                             <span className="text-sm font-light text-emerald-400">{stats.parcelasPagasCount}</span>
+                          </div>
+                          <div className="p-2 bg-zinc-950 border border-zinc-800 rounded-2xl flex flex-col items-center justify-center">
+                             <span className="text-zinc-500 text-[8px] font-bold uppercase">Abertas</span>
+                             <span className="text-sm font-light text-amber-400">{stats.parcelasAbertasCount}</span>
+                          </div>
+                          <div className="p-2 bg-zinc-950 border border-zinc-800 rounded-2xl flex flex-col items-center justify-center">
+                             <span className="text-zinc-500 text-[8px] font-bold uppercase">Vencidas</span>
+                             <span className="text-sm font-light text-rose-400">{stats.parcelasVencidasCount}</span>
+                          </div>
+                        </div>
+
                         {selectedClient.observacao && (
                           <div className="p-5 bg-rose-500/5 border border-rose-500/10 rounded-3xl relative overflow-hidden">
                             <div className="absolute top-0 right-0 p-3 opacity-10">
@@ -343,16 +366,28 @@ export function ClientsList({ aura }: { aura: ReturnType<typeof useAura> }) {
                                  const products = JSON.parse(v.produtos || "[]");
                                  return (
                                    <div key={v.id} className="p-5 bg-zinc-950/30 border border-zinc-800/50 rounded-3xl space-y-4">
-                                     <div className="flex justify-between items-start">
-                                       <div className="space-y-1">
-                                         <p className="text-xs font-bold text-zinc-100">Compra de {format(new Date(v.criado_em), "dd/MM/yy")}</p>
-                                         <p className="text-[9px] text-zinc-500 uppercase tracking-widest">{v.qtd_parcelas} parcelas</p>
-                                       </div>
-                                       <div className="text-right">
-                                          <p className="text-sm font-bold text-white">{formatCurrency(v.valor_venda)}</p>
-                                          <p className="text-[8px] text-emerald-400 font-bold uppercase tracking-widest">Lucro: {formatCurrency(v.lucro)}</p>
-                                       </div>
-                                     </div>
+                                         <div className="flex justify-between items-start">
+                                           <div className="space-y-1">
+                                             <p className="text-xs font-bold text-zinc-100">Compra de {format(new Date(v.criado_em), "dd/MM/yy")}</p>
+                                             <p className="text-[9px] text-zinc-500 uppercase tracking-widest">{v.qtd_parcelas} parcelas • {v.marca || 'Mix'}</p>
+                                           </div>
+                                           <div className="text-right flex items-start gap-4">
+                                              <div className="text-right">
+                                                <p className="text-sm font-bold text-white">{formatCurrency(v.valor_venda)}</p>
+                                                <p className="text-[8px] text-emerald-400 font-bold uppercase tracking-widest">Lucro: {formatCurrency(v.lucro)}</p>
+                                              </div>
+                                              <Button 
+                                                variant="ghost" 
+                                                size="sm" 
+                                                onClick={() => {
+                                                  toast.info("Para editar os detalhes desta venda, acesse a aba 'Vendas'");
+                                                }}
+                                                className="h-8 w-8 p-0 rounded-full text-zinc-600 hover:text-white"
+                                              >
+                                                <ShoppingBag size={14} />
+                                              </Button>
+                                           </div>
+                                         </div>
                                      <div className="flex flex-wrap gap-2">
                                         {products.map((p: any, i: number) => (
                                           <div key={i} className="px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center gap-2">
