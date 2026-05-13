@@ -14,8 +14,16 @@ export const formatCurrency = (val: number) => {
 
 export const parseNumber = (val: any): number => {
   if (val === undefined || val === null || val === "") return 0;
-  if (typeof val === "number") return val;
-  const normalized = String(val).replace(",", ".");
-  const parsed = parseFloat(normalized);
-  return isNaN(parsed) ? 0 : parsed;
+  let num: number;
+  if (typeof val === "number") {
+    num = val;
+  } else {
+    const normalized = String(val).replace(",", ".");
+    num = parseFloat(normalized);
+  }
+  
+  if (isNaN(num)) return 0;
+  
+  // Baserow only accepts 2 decimal places for these fields
+  return Math.round(num * 100) / 100;
 };

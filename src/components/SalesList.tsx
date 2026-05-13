@@ -23,6 +23,7 @@ export function SalesList({ aura }: { aura: ReturnType<typeof useAura> }) {
     custo: "",
     valor_venda: "",
     qtd_parcelas: "1",
+    primeiro_vencimento: format(new Date(), "yyyy-MM-dd"),
   });
 
   const handleCreateSale = async (e: React.FormEvent) => {
@@ -39,13 +40,22 @@ export function SalesList({ aura }: { aura: ReturnType<typeof useAura> }) {
       cliente_nome: selectedClient?.nome || "Desconhecido",
       produto: formData.produto,
       marca: formData.marca,
-      custo: Number(formData.custo),
-      valor_venda: Number(formData.valor_venda),
-      qtd_parcelas: Number(formData.qtd_parcelas),
+      custo: formData.custo,
+      valor_venda: formData.valor_venda,
+      qtd_parcelas: formData.qtd_parcelas,
+      primeiro_vencimento: formData.primeiro_vencimento,
     });
 
     setIsDialogOpen(false);
-    setFormData({ cliente_id: "", produto: "", marca: "", custo: "", valor_venda: "", qtd_parcelas: "1" });
+    setFormData({ 
+      cliente_id: "", 
+      produto: "", 
+      marca: "", 
+      custo: "", 
+      valor_venda: "", 
+      qtd_parcelas: "1",
+      primeiro_vencimento: format(new Date(), "yyyy-MM-dd") 
+    });
   };
 
   const getClientName = (sale: any) => {
@@ -62,22 +72,20 @@ export function SalesList({ aura }: { aura: ReturnType<typeof useAura> }) {
     const saleInst = getSaleInstallments(sale.id);
     const client = clients.find(c => c.id === sale.cliente_id);
     
-    let msg = `🛍️ *Aura Perfumaria - Resumo de Compra*\n\n`;
-    msg += `📦 *Produto:* ${sale.produto}\n`;
-    msg += `🏷️ *Marca:* ${sale.marca}\n`;
-    msg += `💰 *Total:* ${formatCurrency(sale.valor_venda)}\n\n`;
-    msg += `💳 *Parcelamento:*\n`;
+    let msg = `✨ *Aura Perfumaria - Resumo de Pagamento* ✨\n\n`;
+    msg += `🛍️ *${sale.produto} - ${sale.marca}*\n\n`;
+    msg += `Total 💳 *${formatCurrency(sale.valor_venda)}*\n\n`;
     
     saleInst.forEach((inst, idx) => {
       const date = format(new Date(inst.vencimento), "dd/MM/yy");
-      const statusLabel = inst.status === "Paid" ? "✅" : "⏳";
+      const statusLabel = inst.status === "Pago" ? "✅" : "⏳";
       msg += `${idx + 1}. ${date} - ${formatCurrency(inst.valor_parcela)} ${statusLabel}\n`;
     });
-
-    msg += `\nMuito obrigado pela preferência! ✨`;
-
+ 
+    msg += `\nAgradeço a preferência! 🌸`;
+ 
     navigator.clipboard.writeText(msg);
-    toast.success("Mensagem copiada!");
+    toast.success("Copiado!");
     
     if (client) {
       setTimeout(() => {
@@ -167,18 +175,29 @@ export function SalesList({ aura }: { aura: ReturnType<typeof useAura> }) {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Parcelas</label>
-                <Select value={formData.qtd_parcelas} onValueChange={(val) => setFormData({...formData, qtd_parcelas: val})}>
-                  <SelectTrigger className="rounded-2xl border-zinc-800 bg-zinc-950 px-4 py-6">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-zinc-900 border-zinc-800 text-zinc-100">
-                    {[1,2,3,4,5,6].map(n => (
-                      <SelectItem key={n} value={n.toString()}>{n}x {formData.valor_venda ? `de ${formatCurrency(Number(formData.valor_venda) / n)}` : ""}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Parcelas</label>
+                  <Select value={formData.qtd_parcelas} onValueChange={(val) => setFormData({...formData, qtd_parcelas: val})}>
+                    <SelectTrigger className="rounded-2xl border-zinc-800 bg-zinc-950 px-4 py-6">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-zinc-900 border-zinc-800 text-zinc-100">
+                      {[1,2,3,4,5,6].map(n => (
+                        <SelectItem key={n} value={n.toString()}>{n}x {formData.valor_venda ? `de ${formatCurrency(Number(formData.valor_venda) / n)}` : ""}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">1º Vencimento</label>
+                  <Input 
+                    type="date"
+                    value={formData.primeiro_vencimento}
+                    onChange={(e) => setFormData({...formData, primeiro_vencimento: e.target.value})}
+                    className="rounded-2xl border-zinc-800 bg-zinc-950 px-4 py-6"
+                  />
+                </div>
               </div>
 
               <Button type="submit" className="w-full rounded-2xl bg-rose-400 text-zinc-950 font-bold py-6 text-lg hover:bg-rose-300">Gerar Venda</Button>
@@ -189,7 +208,7 @@ export function SalesList({ aura }: { aura: ReturnType<typeof useAura> }) {
 
       <div className="space-y-4">
         {sales.sort((a,b) => new Date(b.criado_em).getTime() - new Date(a.criado_em).getTime()).map((sale) => {
-          const isOverdue = getSaleInstallments(sale.id).some(i => i.status === 'Pending' && new Date(i.vencimento) < new Date());
+          const isOverdue = getSaleInstallments(sale.id).some(i => i.status === 'Pendente' && new Date(i.vencimento) < new Date());
           return (
           <div key={sale.id}>
           <Dialog onOpenChange={(open) => !open && setSelectedSale(null)}>
@@ -216,12 +235,16 @@ export function SalesList({ aura }: { aura: ReturnType<typeof useAura> }) {
                     </div>
                     <div className="text-right">
                       <p className="font-bold text-sm text-zinc-100">{formatCurrency(sale.valor_venda)}</p>
-                      <span className={cn(
-                        "text-[10px] px-2 py-0.5 rounded-full font-medium",
-                        isOverdue ? "bg-rose-500/10 text-rose-400" : "bg-zinc-800 text-zinc-400"
-                      )}>
-                        {isOverdue ? "Atrasada" : `${sale.qtd_parcelas}x`}
-                      </span>
+                      {getSaleInstallments(sale.id).every(i => i.status === "Pago") ? (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-emerald-500/10 text-emerald-400">Paga</span>
+                      ) : (
+                        <span className={cn(
+                          "text-[10px] px-2 py-0.5 rounded-full font-medium",
+                          isOverdue ? "bg-rose-500/10 text-rose-400" : "bg-zinc-800 text-zinc-400"
+                        )}>
+                          {isOverdue ? "Atrasada" : `${sale.qtd_parcelas}x`}
+                        </span>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -271,10 +294,10 @@ export function SalesList({ aura }: { aura: ReturnType<typeof useAura> }) {
                                 onClick={() => toggleInstallmentStatus(inst.id, inst.status)}
                                 className={cn(
                                 "w-6 h-6 rounded-full flex items-center justify-center transition-all",
-                                inst.status === "Paid" ? "bg-emerald-500 text-zinc-950" : "border border-zinc-700"
+                                inst.status === "Pago" ? "bg-emerald-500 text-zinc-950" : "border border-zinc-700"
                                 )}
                             >
-                                {inst.status === "Paid" && <CheckCircle2 size={12} />}
+                                {inst.status === "Pago" && <CheckCircle2 size={12} />}
                             </button>
                             <div>
                                 <p className="text-xs font-medium text-zinc-200">{idx + 1}ª Parcela</p>

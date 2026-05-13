@@ -41,7 +41,7 @@ export interface Installment {
   numero_parcela: number;
   valor_parcela: number;
   vencimento: string;
-  status: "Pending" | "Paid";
+  status: "Pendente" | "Pago";
   pago_em: string | null;
   criado_em: string;
 }
@@ -52,6 +52,7 @@ export interface DashboardStats {
   totalOpen: number;
   totalProfit: number;
   overdueInstallments: number;
+  todayCollections: number;
 }
 
 export interface AuthContextType {

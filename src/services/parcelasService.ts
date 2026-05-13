@@ -20,9 +20,9 @@ export const parcelasService = {
     );
     return res.data.results || [];
   },
-  updateStatus: async (id: number, status: "Pending" | "Paid") => {
+  updateStatus: async (id: number, status: "Pendente" | "Pago") => {
     const data: any = { status };
-    if (status === "Paid") {
+    if (status === "Pago") {
       data.pago_em = new Date().toISOString();
     } else {
       data.pago_em = null;

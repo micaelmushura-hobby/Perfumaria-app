@@ -23,12 +23,27 @@ export function Dashboard({ aura }: { aura: ReturnType<typeof useAura> }) {
 
   return (
     <div className="space-y-6">
-      {stats.overdueInstallments > 0 && (
-        <div className="flex items-center gap-3 p-4 bg-rose-500/10 border border-rose-500/20 rounded-3xl text-rose-300">
-          <AlertCircle size={20} />
-          <p className="text-sm font-medium">Você tem {stats.overdueInstallments} parcelas vencidas!</p>
-        </div>
-      )}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {stats.overdueInstallments > 0 && (
+          <div className="flex items-center gap-3 p-4 bg-rose-500/10 border border-rose-500/20 rounded-3xl text-rose-300">
+            <AlertCircle size={20} />
+            <div>
+              <p className="text-sm font-bold">Atenção!</p>
+              <p className="text-xs">{stats.overdueInstallments} parcelas estão vencidas.</p>
+            </div>
+          </div>
+        )}
+        
+        {stats.todayCollections > 0 && (
+          <div className="flex items-center gap-3 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-3xl text-emerald-400">
+            <DollarSign size={20} />
+            <div>
+              <p className="text-sm font-bold">Cobranças do Dia</p>
+              <p className="text-xs">{stats.todayCollections} recebimentos previstos para hoje!</p>
+            </div>
+          </div>
+        )}
+      </div>
 
       <div className="grid grid-cols-2 gap-4">
         {cards.map((card) => (
@@ -68,7 +83,7 @@ export function Dashboard({ aura }: { aura: ReturnType<typeof useAura> }) {
           </div>
           <div className="flex justify-between items-center text-sm">
             <span className="text-slate-500">Parcelas Pendentes</span>
-            <span className="font-bold">{aura.installments.filter(i => i.status === 'Pending').length}</span>
+            <span className="font-bold">{aura.installments.filter(i => i.status === 'Pendente').length}</span>
           </div>
         </CardContent>
       </Card>

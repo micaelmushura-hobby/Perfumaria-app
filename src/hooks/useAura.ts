@@ -46,51 +46,66 @@ export function useAura() {
   const stats: DashboardStats = useMemo(() => {
     const sArr = sales || [];
     const iArr = installments || [];
+    const today = format(new Date(), "yyyy-MM-dd");
 
     return {
       totalSold: sArr.reduce((acc, s) => acc + parseNumber(s.valor_venda || 0), 0),
       totalReceived: iArr
-        .filter((i) => i.status === "Paid")
+        .filter((i) => i.status === "Pago")
         .reduce((acc, i) => acc + parseNumber(i.valor_parcela || 0), 0),
       totalOpen: iArr
-        .filter((i) => i.status === "Pending")
+        .filter((i) => i.status === "Pendente")
         .reduce((acc, i) => acc + parseNumber(i.valor_parcela || 0), 0),
       totalProfit: sArr.reduce((acc, s) => acc + (parseNumber(s.valor_venda || 0) - parseNumber(s.custo || 0)), 0),
       overdueInstallments: iArr.filter(
-        (i) => i.status === "Pending" && isBefore(new Date(i.vencimento), startOfDay(new Date()))
+        (i) => i.status === "Pendente" && isBefore(new Date(i.vencimento), startOfDay(new Date()))
+      ).length,
+      todayCollections: iArr.filter(
+        (i) => i.status === "Pendente" && i.vencimento === today
       ).length,
     };
   }, [sales, installments]);
 
   const createSaleWithInstallments = async (saleData: any) => {
     try {
+      const valorVenda = parseNumber(saleData.valor_venda);
+      const qtdParcelas = Number(saleData.qtd_parcelas);
+      const custo = parseNumber(saleData.custo);
+      const primeiroVencimento = saleData.primeiro_vencimento ? new Date(saleData.primeiro_vencimento) : new Date();
+
       // 1. Create Sale
       const newSale = await vendasService.create({
         cliente_id: saleData.cliente_id,
         cliente_nome: saleData.cliente_nome,
         produto: saleData.produto,
         marca: saleData.marca,
-        custo: parseNumber(saleData.custo),
-        valor_venda: parseNumber(saleData.valor_venda),
-        lucro: parseNumber(saleData.valor_venda) - parseNumber(saleData.custo),
-        qtd_parcelas: Number(saleData.qtd_parcelas),
-        status: "Pending"
+        custo: custo,
+        valor_venda: valorVenda,
+        lucro: parseNumber(valorVenda - custo),
+        qtd_parcelas: qtdParcelas,
+        status: "Pendente"
       });
 
       // 2. Generate Installments
-      const installmentValue = parseNumber(saleData.valor_venda) / Number(saleData.qtd_parcelas);
+      const baseValue = Math.floor((valorVenda / qtdParcelas) * 100) / 100;
+      const totalAllocated = baseValue * qtdParcelas;
+      const diff = Math.round((valorVenda - totalAllocated) * 100) / 100;
+
       const installmentPromises = [];
 
-      for (let j = 0; j < Number(saleData.qtd_parcelas); j++) {
-        const dueDate = addMonths(new Date(), j);
+      for (let j = 0; j < qtdParcelas; j++) {
+        const dueDate = addMonths(primeiroVencimento, j);
+        const isLast = j === qtdParcelas - 1;
+        const finalValue = isLast ? parseNumber(baseValue + diff) : baseValue;
+
         installmentPromises.push(
           parcelasService.create({
             venda_id: newSale.id,
             cliente_nome: saleData.cliente_nome,
             numero_parcela: j + 1,
-            valor_parcela: Number(installmentValue.toFixed(2)),
+            valor_parcela: finalValue,
             vencimento: format(dueDate, "yyyy-MM-dd"),
-            status: "Pending"
+            status: "Pendente"
           })
         );
       }
@@ -106,7 +121,7 @@ export function useAura() {
 
   const toggleInstallmentStatus = async (id: number, currentStatus: string) => {
     try {
-      const newStatus = currentStatus === "Paid" ? "Pending" : "Paid";
+      const newStatus = currentStatus === "Pago" ? "Pendente" : "Pago";
       await parcelasService.updateStatus(id, newStatus as any);
       toast.success("Status atualizado!");
       fetchData();

@@ -12,7 +12,7 @@ export function ClientsList({ aura }: { aura: ReturnType<typeof useAura> }) {
   const { clients, fetchData } = aura;
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [newClient, setNewClient] = useState({ nome: "", telefone: "" });
+  const [newClient, setNewClient] = useState({ nome: "", telefone: "", observacao: "" });
 
   const formatPhone = (phone: string) => {
     const d = phone.replace(/\D/g, "");
@@ -27,10 +27,10 @@ export function ClientsList({ aura }: { aura: ReturnType<typeof useAura> }) {
       await clientesService.create({
         nome: newClient.nome,
         telefone: formatPhone(newClient.telefone),
-        observacao: "",
+        observacao: newClient.observacao,
       });
       toast.success("Cliente cadastrado!");
-      setNewClient({ nome: "", telefone: "" });
+      setNewClient({ nome: "", telefone: "", observacao: "" });
       setIsDialogOpen(false);
       fetchData();
     } catch (error) {
@@ -87,6 +87,15 @@ export function ClientsList({ aura }: { aura: ReturnType<typeof useAura> }) {
                   className="rounded-2xl border-zinc-800 bg-zinc-950 text-zinc-100"
                 />
               </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Observação</label>
+                <Input 
+                  placeholder="Ex: Prefere pagar no sábado" 
+                  value={newClient.observacao} 
+                  onChange={(e) => setNewClient({...newClient, observacao: e.target.value})}
+                  className="rounded-2xl border-zinc-800 bg-zinc-950 text-zinc-100"
+                />
+              </div>
               <Button type="submit" className="w-full rounded-2xl bg-rose-400 text-zinc-950 font-bold hover:bg-rose-300">Salvar Cliente</Button>
             </form>
           </DialogContent>
@@ -111,6 +120,7 @@ export function ClientsList({ aura }: { aura: ReturnType<typeof useAura> }) {
                 <div>
                   <h3 className="font-medium text-sm text-zinc-100">{client.nome}</h3>
                   <p className="text-xs text-zinc-500">{client.telefone}</p>
+                  {client.observacao && <p className="text-[10px] text-rose-300/60 leading-tight mt-1">{client.observacao}</p>}
                 </div>
               </div>
               <div className="flex gap-2">
