@@ -10,7 +10,7 @@ import { BRANDS } from "@/src/constants";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { ptBR } from "date-fns/locale";
-import { cn, formatCurrency } from "@/lib/utils";
+import { cn, formatCurrency, parseNumber } from "@/lib/utils";
 
 export function SalesList({ aura }: { aura: ReturnType<typeof useAura> }) {
   const { sales, clients, installments, createSaleWithInstallments, toggleInstallmentStatus } = aura;
@@ -63,6 +63,7 @@ export function SalesList({ aura }: { aura: ReturnType<typeof useAura> }) {
   };
 
   const getSaleInstallments = (saleId: number) => {
+    if (!installments) return [];
     return installments
       .filter((i) => i.venda_id === saleId)
       .sort((a, b) => new Date(a.vencimento).getTime() - new Date(b.vencimento).getTime());
@@ -118,7 +119,7 @@ export function SalesList({ aura }: { aura: ReturnType<typeof useAura> }) {
                     <SelectValue placeholder="Selecione um cliente" />
                   </SelectTrigger>
                   <SelectContent className="bg-zinc-900 border-zinc-800 text-zinc-100">
-                    {clients.map(c => (
+                    {(clients || []).map(c => (
                       <SelectItem key={c.id} value={c.id.toString()}>{c.nome}</SelectItem>
                     ))}
                   </SelectContent>
@@ -207,8 +208,10 @@ export function SalesList({ aura }: { aura: ReturnType<typeof useAura> }) {
       </div>
 
       <div className="space-y-4">
-        {sales.sort((a,b) => new Date(b.criado_em).getTime() - new Date(a.criado_em).getTime()).map((sale) => {
-          const isOverdue = getSaleInstallments(sale.id).some(i => i.status !== 'Pago' && new Date(i.vencimento) < new Date());
+        {(sales || []).sort((a,b) => new Date(b.criado_em).getTime() - new Date(a.criado_em).getTime()).map((sale) => {
+          const sInst = getSaleInstallments(sale.id);
+          const isOverdue = sInst.some(i => i.status !== 'Pago' && new Date(i.vencimento) < new Date());
+          const isPaid = sInst.length > 0 && sInst.every(i => i.status === "Pago");
           return (
           <div key={sale.id}>
           <Dialog onOpenChange={(open) => !open && setSelectedSale(null)}>
@@ -235,7 +238,7 @@ export function SalesList({ aura }: { aura: ReturnType<typeof useAura> }) {
                     </div>
                     <div className="text-right">
                       <p className="font-bold text-sm text-zinc-100">{formatCurrency(sale.valor_venda)}</p>
-                      {getSaleInstallments(sale.id).every(i => i.status === "Pago") ? (
+                      {isPaid ? (
                         <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-emerald-500/10 text-emerald-400">Paga</span>
                       ) : (
                         <span className={cn(
@@ -270,19 +273,34 @@ export function SalesList({ aura }: { aura: ReturnType<typeof useAura> }) {
                     </Button>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="p-4 bg-zinc-950 border border-zinc-800 rounded-2xl">
-                      <p className="text-[10px] uppercase font-bold text-zinc-500 tracking-widest">Valor Total</p>
-                      <p className="text-lg font-light">{formatCurrency(selectedSale.valor_venda)}</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-3 bg-zinc-950 border border-zinc-800 rounded-2xl">
+                      <p className="text-[9px] uppercase font-bold text-zinc-500 tracking-widest">Valor Venda</p>
+                      <p className="text-sm font-medium">{formatCurrency(selectedSale.valor_venda)}</p>
                     </div>
-                    <div className="p-4 bg-zinc-950 border border-zinc-800 rounded-2xl">
-                      <p className="text-[10px] uppercase font-bold text-zinc-500 tracking-widest">Lucro</p>
-                      <p className="text-lg font-light text-emerald-400">{formatCurrency(selectedSale.valor_venda - selectedSale.custo)}</p>
+                    <div className="p-3 bg-zinc-950 border border-zinc-800 rounded-2xl">
+                      <p className="text-[9px] uppercase font-bold text-zinc-500 tracking-widest">Custo Total</p>
+                      <p className="text-sm font-medium">{formatCurrency(selectedSale.custo)}</p>
+                    </div>
+                    <div className="p-3 bg-zinc-950 border border-zinc-800 rounded-2xl">
+                      <p className="text-[9px] uppercase font-bold text-zinc-500 tracking-widest">Lucro Estimado</p>
+                      <p className="text-sm font-medium text-emerald-400">{formatCurrency(parseNumber(selectedSale.valor_venda) - parseNumber(selectedSale.custo))}</p>
+                    </div>
+                    <div className="p-3 bg-zinc-950 border border-zinc-800 rounded-2xl">
+                      <p className="text-[9px] uppercase font-bold text-zinc-500 tracking-widest">Recebido</p>
+                      <p className="text-sm font-medium text-blue-400">
+                        {formatCurrency(getSaleInstallments(selectedSale.id).filter(i => i.status === "Pago").reduce((acc, i) => acc + parseNumber(i.valor_parcela), 0))}
+                      </p>
                     </div>
                   </div>
 
                   <div className="space-y-3">
-                    <h4 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Plano de Pagamento</h4>
+                    <div className="flex justify-between items-center">
+                      <h4 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Parcelas</h4>
+                      <p className="text-[10px] font-medium text-zinc-400">
+                        Pendente: {formatCurrency(getSaleInstallments(selectedSale.id).filter(i => i.status !== "Pago").reduce((acc, i) => acc + parseNumber(i.valor_parcela), 0))}
+                      </p>
+                    </div>
                     <div className="space-y-2 text-zinc-100">
                         {getSaleInstallments(selectedSale.id).map((inst, idx) => (
                         <div 

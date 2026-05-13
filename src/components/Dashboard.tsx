@@ -75,15 +75,15 @@ export function Dashboard({ aura }: { aura: ReturnType<typeof useAura> }) {
         <CardContent className="space-y-4 pt-6">
           <div className="flex justify-between items-center text-sm">
             <span className="text-slate-500">Total de Vendas</span>
-            <span className="font-bold">{aura.sales.length}</span>
+            <span className="font-bold">{(aura.sales || []).length}</span>
           </div>
           <div className="flex justify-between items-center text-sm">
             <span className="text-slate-500">Clientes Cadastrados</span>
-            <span className="font-bold">{aura.clients.length}</span>
+            <span className="font-bold">{(aura.clients || []).length}</span>
           </div>
           <div className="flex justify-between items-center text-sm">
             <span className="text-slate-500">Parcelas Pendentes</span>
-            <span className="font-bold">{aura.installments.filter(i => i.status !== 'Pago').length}</span>
+            <span className="font-bold">{(aura.installments || []).filter(i => i.status !== 'Pago').length}</span>
           </div>
         </CardContent>
       </Card>

@@ -24,9 +24,9 @@ export function useAura() {
         vendasService.getAll(),
         parcelasService.getAll(),
       ]);
-      setClients(c);
-      setSales(s);
-      setInstallments(i);
+      setClients(c || []);
+      setSales(s || []);
+      setInstallments(i || []);
     } catch (error) {
       console.error(error);
       toast.error(`Erro ao carregar dados: ${String(error)}`);
@@ -112,7 +112,7 @@ export function useAura() {
 
       await Promise.all(installmentPromises);
       toast.success("Venda e parcelas geradas com sucesso!");
-      fetchData();
+      await fetchData();
     } catch (error) {
       console.error(error);
       toast.error(`Erro ao criar venda: ${String(error)}`);
@@ -124,7 +124,7 @@ export function useAura() {
       const newStatus = currentStatus === "Pago" ? "Pendente" : "Pago";
       await parcelasService.updateStatus(id, newStatus as any);
       toast.success("Status atualizado!");
-      fetchData();
+      await fetchData();
     } catch (error) {
       toast.error(`Erro ao atualizar status: ${String(error)}`);
     }
