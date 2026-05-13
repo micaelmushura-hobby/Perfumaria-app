@@ -23,7 +23,9 @@ export function Login({ aura }: { aura: ReturnType<typeof useAura> }) {
       await aura.login(email, senha);
       toast.success("Login realizado com sucesso!");
     } catch (error: any) {
-      toast.error(String(error || "Falha na autenticação. Verifique suas credenciais."));
+      console.log('LOGIN ERROR:', error);
+      const displayError = typeof error === 'object' ? JSON.stringify(error) : String(error);
+      toast.error(displayError || "Falha na autenticação. Verifique suas credenciais.");
     } finally {
       setLoading(false);
     }

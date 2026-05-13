@@ -1,15 +1,23 @@
 import { api } from "./api";
 import { Installment } from "@/src/types";
 import { TABLE_IDS } from "@/src/constants";
+import { usuariosService } from "./usuariosService";
 
 export const parcelasService = {
   getAll: async () => {
-    const res = await api.get<{ results: Installment[] }>(`/baserow/${TABLE_IDS.INSTALLMENTS}`);
+    const user = usuariosService.getCurrentUser();
+    if (!user) return [];
+    
+    const res = await api.get<{ results: Installment[] }>(
+      `/database/rows/table/${TABLE_IDS.INSTALLMENTS}/?user_field_names=true&filter__field_user_id__equal=${user.id}`
+    );
     return res.data.results || [];
   },
   getByVenda: async (vendaId: number) => {
-    const all = await parcelasService.getAll();
-    return all.filter(p => p.venda_id === vendaId);
+    const res = await api.get<{ results: Installment[] }>(
+      `/database/rows/table/${TABLE_IDS.INSTALLMENTS}/?user_field_names=true&filter__field_venda_id__equal=${vendaId}`
+    );
+    return res.data.results || [];
   },
   updateStatus: async (id: number, status: "Pending" | "Paid") => {
     const data: any = { status };
@@ -18,11 +26,27 @@ export const parcelasService = {
     } else {
       data.pago_em = null;
     }
-    const res = await api.patch<Installment>(`/baserow/${TABLE_IDS.INSTALLMENTS}/${id}`, data);
+    
+    const res = await api.patch<Installment>(
+      `/database/rows/table/${TABLE_IDS.INSTALLMENTS}/${id}/?user_field_names=true`,
+      data
+    );
     return res.data;
   },
   create: async (data: any) => {
-    const res = await api.post<Installment>(`/baserow/${TABLE_IDS.INSTALLMENTS}`, data);
+    const user = usuariosService.getCurrentUser();
+    if (!user) throw new Error("Usuário não autenticado");
+
+    const payload = {
+      ...data,
+      user_id: [user.id],
+      venda_id: Array.isArray(data.venda_id) ? data.venda_id : [data.venda_id]
+    };
+
+    const res = await api.post<Installment>(
+      `/database/rows/table/${TABLE_IDS.INSTALLMENTS}/?user_field_names=true`,
+      payload
+    );
     return res.data;
   },
 };

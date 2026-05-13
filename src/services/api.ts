@@ -1,44 +1,47 @@
 import axios from "axios";
 
 export const api = axios.create({
-  baseURL: "/api",
+  baseURL: `${import.meta.env.VITE_BASEROW_URL}/api`,
+  headers: {
+    Authorization: `Token ${import.meta.env.VITE_BASEROW_TOKEN}`,
+    'Content-Type': 'application/json',
+  },
 });
 
-// Interceptor to add and handle tokens
+// Interceptor to handle internal app token if still needed for some logic, 
+// though the user wants direct Baserow interaction. 
+// We'll keep it for local user session persistence if needed, but the main auth is Baserow Token.
+
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("aura_token");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
+  console.log('REQUEST:', {
+    method: config.method?.toUpperCase(),
+    url: config.url,
+    data: config.data,
+    params: config.params
+  });
   return config;
 });
 
 api.interceptors.response.use(
   (response) => {
-    console.log(`[API SUCCESS] ${response.config.method?.toUpperCase()} ${response.config.url}`);
+    console.log('RESPONSE:', response.data);
     return response;
   },
   (error) => {
-    console.error('[API ERROR]:', error.response?.data || error.message);
+    console.log('ERROR:', error.response?.data);
     
+    // Baserow sometimes uses 401/403 for token issues
     if (error.response?.status === 401 || error.response?.status === 403) {
-      localStorage.removeItem("aura_token");
-      localStorage.removeItem("aura_user");
-      if (typeof window !== 'undefined' && window.location.pathname !== "/login") {
-        window.location.href = "/login";
-      }
+      // Local session cleanup if needed
+      // localStorage.removeItem("aura_token");
     }
 
-    // Extract the message from Baserow or Axios error
-    let message = 'Erro interno no servidor';
+    const data = error.response?.data;
+    const message = data?.detail || data?.message || data?.error || error.message || 'Erro interno';
     
-    if (error.response?.data) {
-      const data = error.response.data;
-      message = data.message || data.error || (typeof data === 'string' ? data : JSON.stringify(data));
-    } else if (error.message) {
-      message = error.message;
-    }
+    // Ensure we don't return an object to the toast
+    const finalMessage = typeof message === 'object' ? JSON.stringify(message) : message;
 
-    return Promise.reject(String(message));
+    return Promise.reject(finalMessage);
   }
 );
